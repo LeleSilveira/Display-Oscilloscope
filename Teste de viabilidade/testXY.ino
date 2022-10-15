@@ -1,12 +1,3 @@
-//https://cpp.codetea.com/simple-library-for-oscilloscope-vector-graphics-on-esp32/
-//https://create.arduino.cc/projecthub/410942/draw-anything-on-your-oscilloscope-ffb2aa
-//https://www.instructables.com/Display-letters-and-words-on-the-oscilloscope/
-//http://paulbourke.net/dataformats/hershey/
-//https://www.esp32.com/viewtopic.php?t=10405  FORMATO DE IMG
-// https://esp32.com/viewtopic.php?t=17658    IMG PIXEL
-//https://randomnerdtutorials.com/display-images-esp32-esp8266-web-server/  ESP32 IMG WEB
-//tela inicial algo girando e nome Image Display, inteface web escolhe imagem, processa e 
-//desenha no osciloscopio, final se der, tira foto com cam e exibe la. Ver amostragem ?
 #include <driver/dac.h>
 #include <soc/rtc.h>
 
