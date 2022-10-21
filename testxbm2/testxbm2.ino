@@ -1,7 +1,10 @@
 #include <driver/dac.h>
 #include "FastDAC.h"
-int xres = 255; //16-1
-int yres = 255; //16-1
+int xres = 15; //16-1
+int yres = 15; //16-1
+byte xval[16][16];
+byte yval[16][16];
+
 byte imgData[] PROGMEM = {//quad
   0xff, 0xff, 0x01, 0x80, 0xfd, 0xbf, 0x05, 0xa0, 0xf5, 0xaf, 0x15, 0xa8,
   0xd5, 0xab, 0x55, 0xaa, 0x55, 0xaa, 0xd5, 0xab, 0x15, 0xa8, 0xf5, 0xaf,
@@ -14,7 +17,7 @@ byte imgData2[] PROGMEM = {//smile
              0x08, 0x20, 0x30, 0x18, 0xc0, 0x07, 0x00, 0x00
 }; 
 
-byte imgData3[] PROGMEM = {//dog32
+byte imgData3[] PROGMEM = {//dog
   0xFF, 0xF0, 0x7F, 0xF8, 0x7F, 0xE0, 0x3F, 0xF8, 0x7F, 0xE0, 0x3F, 0xF8, 
   0x7F, 0xE2, 0x1F, 0xF8, 0x3F, 0xC1, 0x9F, 0xF8, 0x3F, 0xE4, 0x3F, 0xF8, 
   0x3F, 0xF3, 0x3F, 0xE0, 0x1F, 0xBA, 0xFF, 0xE0, 0x1F, 0xF8, 0x10, 0xC0, 
@@ -27,7 +30,6 @@ byte imgData3[] PROGMEM = {//dog32
   0xFF, 0x02, 0x01, 0xFE, 0xFF, 0x01, 0x00, 0xFE, 0xFF, 0x01, 0x00, 0xFE, 
   0xFF, 0x03, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0xFF,
 }; 
-
 byte imgData4[] PROGMEM = {//dog 256x256
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xBF, 0x01, 
@@ -712,7 +714,7 @@ byte imgData4[] PROGMEM = {//dog 256x256
   0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x2A, 0x48, 
   0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 
   0xFF, 0xCF, 0xED, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
-};
+}; 
 
 void setup() {
   dac_output_enable(DAC_CHANNEL_1);
@@ -721,34 +723,15 @@ void setup() {
  rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
   Serial.println("CPU Clockspeed: ");
   Serial.println(rtc_clk_cpu_freq_value(rtc_clk_cpu_freq_get()));
-  //speed test
-  /*Serial.print("Writing 1M Samples with API functions: ");
-  int t = millis();
-  for(int i = 0; i < 1000000; i++)
-    dac_output_voltage(DAC_CHANNEL_1, i);
-  int m = millis() - t;
-  Serial.print(1000000000 / (millis() - t)); 
-  Serial.println(" Sa/s"); 
-  Serial.print("Writing 1M Samples with FastDAC functions: ");
-  t = millis();
-  DACPrepare(false);
-  for(int i = 0; i < 1000000; i++)
-  {
-    DAC1Write(i);
-  }
-  DACUnprepare(false);
-  Serial.print(1000000000 / (millis() - t));
-  Serial.println(" Sa/s");  */
+  displayOsci(imgData2, xres, yres);
 
 }
+//TESTAR RODAR FUNÇÃO E PREENCHER VETORES NO INICIO, LOOP WRITE VALORES
 void displayOsci(byte * frame, int xres, int yres){
-  DACPrepare(true);
-  int i,j,k,z,yi=yres,y2=2*yres+1;
-  for(k =y2; k >= 0; k-=2){//2*yres+1=31
-    //Serial.println("loop1");
+int i,j,k,z,yi=yres,y2=2*yres+1;
+  for(k =y2; k >= 0; k-=2){//yress=31
       z=k;
       for(j = 0;j <=xres ; j++){
-        //Serial.println("loop2");
         i=j;
         if(j>=8){
           i=j-8;
@@ -756,23 +739,42 @@ void displayOsci(byte * frame, int xres, int yres){
         }
         byte mask = 0x01 << i;
         byte answer = (frame[y2-z] & mask) >> i;
+       // Serial.println(answer);
         if (answer == 0x01) {
-          DAC1Write(round((float)j * 255.0 / (float)xres));//dac_output_voltage(DAC_CHANNEL_1, round((float)j * 255.0 / (float)xres));
-          DAC2Write(round((float)yi * 255.0 / (float)yres));//dac_output_voltage(DAC_CHANNEL_2, round((float)yi * 255.0 / (float)yres));
+          xval[j][y2]=(round((float)j * 255.0 / (float)xres));//dac_output_voltage(DAC_CHANNEL_1, round((float)j * 255.0 / (float)xres));
+          yval[j][y2]=(round((float)yi * 255.0 / (float)yres));//dac_output_voltage(DAC_CHANNEL_2, round((float)yi * 255.0 / (float)yres));
            /*Serial.print("x:");
-           Serial.println(round((float)j * 255.0 / (float)xres));
+           Serial.println(round(pixel * 255.0 / (float)xres));
            Serial.print("y:");
-           Serial.println(round((float)yi * 255.0 / (float)yres));*/
-           delayMicroseconds(100);//depende da qtd de pontos
+           Serial.println(round((float)k * 255.0 / (float)yres));*/
+         // delayMicroseconds(100);
+        }
+        else{
+          xval[j][y2]=-1;
         }
       }
     yi=yi-1;
   }
-   DACUnprepare(true);
 }
 
 
+
 void loop() {
-  displayOsci(imgData4, xres, yres);
-  
+   DACPrepare(true);
+  int i,j;
+  for(i =yres; i >= 0; i--){
+      for(j = 0;j <=xres ; j++){
+        if((xval[j][i]!=-1)){
+          DAC1Write(xval[j][i]);//dac_output_voltage(DAC_CHANNEL_1, xval[j][i]);
+          DAC2Write(yval[j][i]);//dac_output_voltage(DAC_CHANNEL_2, yval[j][i]);
+           /*Serial.print("x:");
+           Serial.println(xval[j][i]);
+           Serial.print("y:");
+           Serial.println(yval[j][i]);*/
+          delayMicroseconds(1000);
+        }
+        
+      }
+  }
+   DACUnprepare(true);
 }
