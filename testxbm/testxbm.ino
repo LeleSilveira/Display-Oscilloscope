@@ -1,7 +1,7 @@
 #include <driver/dac.h>
 #include "FastDAC.h"
-int xres = 255; //16-1
-int yres = 255; //16-1
+int xres = 31; //16-1
+int yres = 31; //16-1
 byte imgData[] PROGMEM = {//quad
   0xff, 0xff, 0x01, 0x80, 0xfd, 0xbf, 0x05, 0xa0, 0xf5, 0xaf, 0x15, 0xa8,
   0xd5, 0xab, 0x55, 0xaa, 0x55, 0xaa, 0xd5, 0xab, 0x15, 0xa8, 0xf5, 0xaf,
@@ -743,16 +743,16 @@ void setup() {
 }
 void displayOsci(byte * frame, int xres, int yres){
   DACPrepare(true);
-  int i,j,k,z,yi=yres,y2=2*yres+1;
-  for(k =y2; k >= 0; k-=2){//2*yres+1=31
+  int i,j,k,z,yi=yres,stp=(int)((yres+1)/8.0),y2=stp*yres+1;
+  for(k =y2; k >= 0; k-=stp){//2*yres+1=31
     //Serial.println("loop1");
       z=k;
       for(j = 0;j <=xres ; j++){
         //Serial.println("loop2");
         i=j;
         if(j>=8){
-          i=j-8;
-          z=k-1;
+          i=j-8*(int)(j/8.0);
+          z=k-(int)(j/8) ;
         }
         byte mask = 0x01 << i;
         byte answer = (frame[y2-z] & mask) >> i;
@@ -763,7 +763,7 @@ void displayOsci(byte * frame, int xres, int yres){
            Serial.println(round((float)j * 255.0 / (float)xres));
            Serial.print("y:");
            Serial.println(round((float)yi * 255.0 / (float)yres));*/
-           delayMicroseconds(100);//depende da qtd de pontos
+          // delayMicroseconds(100);//depende da qtd de pontos
         }
       }
     yi=yi-1;
@@ -773,6 +773,6 @@ void displayOsci(byte * frame, int xres, int yres){
 
 
 void loop() {
-  displayOsci(imgData4, xres, yres);
+  displayOsci(imgData3, xres, yres);
   
 }
