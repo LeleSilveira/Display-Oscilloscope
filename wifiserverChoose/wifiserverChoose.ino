@@ -1,41 +1,21 @@
-/*
- WiFi Web Server LED Blink
-
- A simple web server that lets you blink an LED via the web.
- This sketch will print the IP address of your WiFi Shield (once connected)
- to the Serial monitor. From there, you can open that address in a web browser
- to turn on and off the LED on pin 5.
-
- If the IP address of your shield is yourAddress:
- http://yourAddress/H turns the LED on
- http://yourAddress/L turns it off
-
- This example is written for a network using WPA encryption. For
- WEP or WPA, change the Wifi.begin() call accordingly.
-
- Circuit:
- * WiFi shield attached
- * LED attached to pin 5
-
- created for arduino 25 Nov 2012
- by Tom Igoe
-
-ported for sparkfun esp32 
-31.01.2017 by Jan Hendrik Berlin
- 
- */
-
 #include <WiFi.h>
 #include <driver/dac.h>
 #include "FastDAC.h"
 
+void copy(byte* src, byte* dst, int len) {
+    memcpy(dst, src, sizeof(src[0])*len);
+}
+
 const char* ssid     = "leticia";
 const char* password = "analeticia";
-int op=0;
 int xres = 63; //16-1
 int yres = 63; //16-1
+int xo=255.0;
+int yo=255.0;
+hw_timer_t * timer = NULL;
+byte imgData[512]; //64x64/8=512
 
-byte imgData1[] PROGMEM = {//flor32
+byte imgData1[] PROGMEM = {//flor64
   0xFF, 0xFF, 0xDF, 0x7B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 
   0xFF, 0xFF, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xDF, 
@@ -81,7 +61,8 @@ byte imgData1[] PROGMEM = {//flor32
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 }; 
 
-byte imgData2[] PROGMEM = {//dog32
+
+byte imgData2[] PROGMEM = {//dog64
  0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x3F, 0xC0, 0xFF, 0xFF, 0xFF, 0x00, 0xFE, 
   0xFF, 0x1F, 0xC0, 0xFF, 0xFF, 0x7F, 0x00, 0xFE, 0xFF, 0x1F, 0xC0, 0xFF, 
   0xFF, 0x7F, 0x00, 0xFE, 0xFF, 0x0F, 0xC0, 0xFF, 0xFF, 0x7F, 0x00, 0xFE, 
@@ -182,7 +163,7 @@ byte imgData3[] PROGMEM = {//man80x60
 
 WiFiServer server(80);
 
-void displayOsci(byte * frame, int xres, int yres, float xo, float yo){
+void IRAM_ATTR displayOsci(byte * frame, int xres, int yres, double xd, double yd){
   DACPrepare(true);
   int i,j,k,z,yi=yres,stp=(int)((yres+1)/8.0),y2=stp*yres+1;
   for(k =y2; k >= 0; k-=stp){//2*yres+1=31
@@ -193,34 +174,50 @@ void displayOsci(byte * frame, int xres, int yres, float xo, float yo){
         i=j;
         if(j>=8){
           i=j-8*(int)(j/8.0);
-          z=k-(int)(j/8) ;
+          z=k-(int)(j/8.0) ;
         }
         byte mask = 0x01 << i;
         byte answer = (frame[y2-z] & mask) >> i;
         if (answer != 0x01) {
-          DAC1Write(round((float)j * xo / (float)xres));//dac_output_voltage(DAC_CHANNEL_1, round((float)j * 255.0 / (float)xres));
-          DAC2Write(round((float)yi * yo / (float)yres));//dac_output_voltage(DAC_CHANNEL_2, round((float)yi * 255.0 / (float)yres));
+          DAC1Write(round((double)j * xd / (double)xres));//dac_output_voltage(DAC_CHANNEL_1, round((float)j * 255.0 / (float)xres));
+          DAC2Write(round((double)yi * yd / (double)yres));//dac_output_voltage(DAC_CHANNEL_2, round((float)yi * 255.0 / (float)yres));
+           
            /*Serial.print("x:");
            Serial.println(round((float)j * 255.0 / (float)xres));
            Serial.print("y:");
            Serial.println(round((float)yi * 255.0 / (float)yres));*/
-          delayMicroseconds(10);//depende da qtd de pontos
-        }
+         // delayMicroseconds(10);//depende da qtd de pontos
+        } 
       }
     yi=yi-1;
   }
    DACUnprepare(true);
+  
+}
+void IRAM_ATTR irq_handler() {
+  displayOsci(imgData, xres, yres,xo,yo);
 }
 
 
+void timer_start_task(void *argm) {
+  timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer, &irq_handler, true);
+  timerAlarmWrite(timer, 20500, true); // 1.000.000 us = 1s
+  timerAlarmEnable(timer);
+
+    vTaskDelete(NULL);
+}
+
 void setup()
 {
+  copy(imgData1, imgData, 512);
     Serial.begin(115200);
     dac_output_enable(DAC_CHANNEL_1);
   dac_output_enable(DAC_CHANNEL_2);
    rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
   Serial.println("CPU Clockspeed: ");
   Serial.println(rtc_clk_cpu_freq_value(rtc_clk_cpu_freq_get()));
+  
 
     delay(10);
 
@@ -244,6 +241,9 @@ void setup()
     Serial.println(WiFi.localIP());
     
     server.begin();
+
+    // create timer interrupt
+    xTaskCreatePinnedToCore(timer_start_task, "timer_start", 4096, NULL, 0, NULL,0);//All ESP-IDF protocol stuff (UART, WiFi, BLE, etc.) run in CPU 0 (PRO_CPU_NUM)
 
 }
 
@@ -289,24 +289,28 @@ void loop(){
 
         // Check to see if the client request was "GET /H" or "GET /L":
         if (currentLine.endsWith("GET /1")) {
-          op=1;               // GET /H turns the LED on
+          xres=63;               
+          yres=63;
+          xo=255.0;
+          yo=255.0;
+          copy(imgData1, imgData, 512);
         }
         if (currentLine.endsWith("GET /2")) {
-          op=2;                // GET /L turns the LED off
+          xres=63;               
+          yres=63;
+          xo=255.0;
+          yo=255.0;
+          copy(imgData2, imgData, 512);
         }
         if (currentLine.endsWith("GET /3")) {
-          op=3;                // GET /L turns the LED off
+          xres=79;               
+          yres=59;
+          xo=240.0;
+          yo=180.0;
+          //imgData=imgData3;
         }
       }
-       if(op==1){
-    displayOsci(imgData1, xres, yres, 255.0, 255.0);
-  }
-  if(op==2){
-    displayOsci(imgData2, xres, yres, 255.0, 255.0);
-  }
-  if(op==3){
-    displayOsci(imgData3, 80, 60, 240.0, 180.0);
-  }
+       
     }
     // close the connection:
     client.stop();

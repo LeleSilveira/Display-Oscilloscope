@@ -2,12 +2,9 @@
 #include "FastDAC.h"
 int xres = 63; //16-1
 int yres = 63; //16-1
-byte xval[64][64];
-byte yval[64][64];
 hw_timer_t * timer = NULL;
-//int total=0;
 
-byte imgData1[] PROGMEM = {//flor64
+byte imgData2[] PROGMEM = {//flor64
   0xFF, 0xFF, 0xDF, 0x7B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 
   0xFF, 0xFF, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xDF, 
@@ -53,22 +50,7 @@ byte imgData1[] PROGMEM = {//flor64
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 }; 
 
-
-byte imgData2[] PROGMEM = {//flor32
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
-  0xFF, 0xDF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFD, 0x3F, 0xF7, 0xFF, 
-  0xFF, 0x17, 0xE3, 0xFF, 0xFF, 0x01, 0xE0, 0xFF, 0xFF, 0x02, 0x80, 0xFF, 
-  0x7E, 0x00, 0x80, 0xFF, 0xFE, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFE, 
-  0x7F, 0x00, 0x00, 0xFE, 0x3F, 0x80, 0x00, 0xFF, 0x1F, 0xE0, 0x01, 0xFC, 
-  0x7F, 0x60, 0x03, 0xFE, 0x3F, 0xE0, 0x01, 0xFF, 0x1F, 0xA0, 0x02, 0xFE, 
-  0x7F, 0x80, 0x40, 0xFE, 0xFF, 0x01, 0x82, 0xFF, 0xFF, 0x01, 0x00, 0xFF, 
-  0xFF, 0x13, 0x82, 0xFF, 0xFF, 0x07, 0xE0, 0xFF, 0xFF, 0x3F, 0xE4, 0xFF, 
-  0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-}; 
-
-byte imgData3[] PROGMEM = {//dog64
+byte imgData4[] PROGMEM = {//dog64
   0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x3F, 0xC0, 0xFF, 0xFF, 0xFF, 0x00, 0xFE, 
   0xFF, 0x1F, 0xC0, 0xFF, 0xFF, 0x7F, 0x00, 0xFE, 0xFF, 0x1F, 0xC0, 0xFF, 
   0xFF, 0x7F, 0x00, 0xFE, 0xFF, 0x0F, 0xC0, 0xFF, 0xFF, 0x7F, 0x00, 0xFE, 
@@ -114,107 +96,60 @@ byte imgData3[] PROGMEM = {//dog64
   0xFF, 0xFF, 0x4F, 0x00, 0x00, 0x80, 0xF7, 0xFF, 
 }; 
 
-byte imgData4[] PROGMEM = {//dog32
-  0xFF, 0xF0, 0x7F, 0xF8, 0x7F, 0xE0, 0x3F, 0xF8, 0x7F, 0xE0, 0x3F, 0xF8, 
-  0x7F, 0xE2, 0x1F, 0xF8, 0x3F, 0xC1, 0x9F, 0xF8, 0x3F, 0xE4, 0x3F, 0xF8, 
-  0x3F, 0xF3, 0x3F, 0xE0, 0x1F, 0xBA, 0xFF, 0xE0, 0x1F, 0xF8, 0x10, 0xC0, 
-  0x3F, 0xFC, 0x10, 0x80, 0x7F, 0x7C, 0x20, 0x0C, 0xFF, 0x7F, 0x02, 0x04, 
-  0xFF, 0xBF, 0x07, 0x0E, 0xFF, 0x1F, 0x0F, 0x0D, 0xFF, 0x1F, 0x00, 0x08, 
-  0xFF, 0x07, 0x00, 0xB8, 0xFF, 0x03, 0x00, 0x90, 0xFF, 0x00, 0x00, 0xFC, 
-  0xFF, 0x01, 0x00, 0xFF, 0xFF, 0x40, 0x00, 0xFF, 0xFF, 0xC1, 0x09, 0xDF, 
-  0xFF, 0x81, 0x2F, 0xCE, 0xFF, 0x67, 0x1F, 0xEE, 0xFF, 0xEB, 0xFB, 0xF7, 
-  0xDF, 0xC7, 0x3F, 0xF8, 0xBF, 0x87, 0x1F, 0xFF, 0x7F, 0xD7, 0x07, 0xFF, 
-  0xFF, 0x02, 0x01, 0xFE, 0xFF, 0x01, 0x00, 0xFE, 0xFF, 0x01, 0x00, 0xFE, 
-  0xFF, 0x03, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0xFF,
-}; 
-void IRAM_ATTR onTimer() {
-   DACPrepare(true);
-  int i,j;
-  for(i =yres; i >= 0; i--){
+void IRAM_ATTR displayOsci(byte * frame, int xres, int yres, double xo, double yo){
+  DACPrepare(true);
+  int i,j,k,z,yi=yres,stp=(int)((yres+1)/8.0),y2=stp*yres+1;
+  for(k =y2; k >= 0; k-=stp){//2*yres+1=31
+    //Serial.println("loop1");
+      z=k;
       for(j = 0;j <=xres ; j++){
-        if((xval[j][i]!=-1)){
-          DAC1Write(xval[j][i]);//dac_output_voltage(DAC_CHANNEL_1, xval[j][i]);
-          DAC2Write(yval[j][i]);//dac_output_voltage(DAC_CHANNEL_2, yval[j][i]);
-           /*Serial.print("x:");
-           Serial.println(xval[j][i]);
-           Serial.print("y:");
-           Serial.println(yval[j][i]);*/
-          delayMicroseconds(3);
+        //Serial.println("loop2");
+        i=j;
+        if(j>=8){
+          i=j-8*(int)(j/8.0);
+          z=k-(int)(j/8.0) ;
         }
-        
+        byte mask = 0x01 << i;
+        byte answer = (frame[y2-z] & mask) >> i;
+        if (answer != 0x01) {
+          DAC1Write(round((double)j * xo / (double)xres));//dac_output_voltage(DAC_CHANNEL_1, round((float)j * 255.0 / (float)xres));
+          DAC2Write(round((double)yi * yo / (double)yres));//dac_output_voltage(DAC_CHANNEL_2, round((float)yi * 255.0 / (float)yres));
+         // delayMicroseconds(10);//depende da qtd de pontos
+        } 
       }
+    yi=yi-1;
   }
    DACUnprepare(true);
+  
 }
 
+void IRAM_ATTR irq_handler() {
+  displayOsci(imgData4, 63, 63,255.0,255.0);//4,63,63
+}
+
+void timer_start_task(void *argm) {
+     timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer, &irq_handler, true);
+  timerAlarmWrite(timer, 20500, true); // 1.000.000 us = 1s
+  timerAlarmEnable(timer);
+
+    vTaskDelete(NULL);
+}
 
 void setup() {
   dac_output_enable(DAC_CHANNEL_1);
   dac_output_enable(DAC_CHANNEL_2);
   Serial.begin(115200);
- rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
+  rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
   Serial.println("CPU Clockspeed: ");
-  Serial.println(rtc_clk_cpu_freq_value(rtc_clk_cpu_freq_get()));
-  displayOsci(imgData3,63, 63,255.0,255.0);
-
-  timer = timerBegin(0, 80, true);
-  timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 26000, true); // 1.000.000 us = 1s
-  timerAlarmEnable(timer);
-
-}
-//TESTAR RODAR FUNÇÃO E PREENCHER VETORES NO INICIO, LOOP WRITE VALORES
-void displayOsci(byte * frame, int xres, int yres, double xo, double yo){
-int i,j,k,z,yi=yres,stp=(int)((yres+1)/8.0),y2=stp*yres+1;
-  for(k =y2; k >= 0; k-=stp){
-      z=k;
-      for(j = 0;j <=xres ; j++){
-        i=j;
-        if(j>=8){
-           i=j-8*(int)(j/8.0);
-          z=k-(int)(j/8.0) ;
-        }
-        byte mask = 0x01 << i;
-        byte answer = (frame[y2-z] & mask) >> i;
-       // Serial.println(answer);
-        if (answer != 0x01) {//!=0x01
-          xval[j][yi]=(round((double)j * xo / (double)xres));//dac_output_voltage(DAC_CHANNEL_1, round((float)j * 255.0 / (float)xres));
-          yval[j][yi]=(round((double)yi *  yo / (double)yres));//dac_output_voltage(DAC_CHANNEL_2, round((float)yi * 255.0 / (float)yres));
-           // total++;
-           /*Serial.print("j:");
-           Serial.println(j);
-           Serial.print("yi:");
-           Serial.println(yi);*/
-         // delayMicroseconds(100);
-        }
-        else{
-          xval[j][yi]=-1;
-        }
-      }
-    yi=yi-1;
-  }
+  Serial.println(rtc_clk_cpu_freq_value(rtc_clk_cpu_freq_get()));   //PRO_CPU_NUM ou 0
+  xTaskCreatePinnedToCore(timer_start_task, "timer_start", 4096, NULL, 0, NULL,PRO_CPU_NUM);//All ESP-IDF protocol stuff (UART, WiFi, BLE, etc.) run in CPU 0 (PRO_CPU_NUM)
+ 
 }
 
 
-
+//interrupção options: desenhar a img toda, desenhar um pixel
 void loop() {
-  /*
-   DACPrepare(true);
-  int i,j;
-  for(i =yres; i >= 0; i--){
-      for(j = 0;j <=xres ; j++){
-        if((xval[j][i]!=-1)){
-          DAC1Write(xval[j][i]);//dac_output_voltage(DAC_CHANNEL_1, xval[j][i]);
-          DAC2Write(yval[j][i]);//dac_output_voltage(DAC_CHANNEL_2, yval[j][i]);
-           /*Serial.print("x:");
-           Serial.println(xval[j][i]);
-           Serial.print("y:");
-           Serial.println(yval[j][i]);*/
-          //delayMicroseconds(10);
-       /* }
-        
-      }
-  }
-   DACUnprepare(true);
-   */
+  //displayOsci(imgData4, 63, 63,255.0,255.0);//4,63,63
+  
 }
