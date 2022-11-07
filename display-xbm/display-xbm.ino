@@ -226,8 +226,8 @@ byte imgData4[] PROGMEM = {//dog64
 }; 
 void IRAM_ATTR displayOsci(byte * frame, int xres, int yres, double xo, double yo){
   DACPrepare(true);
-  int i,j,k,z,yi=yres,stp=(int)((yres+1)/8.0),y2=stp*yres+1;
-  for(k =y2; k >= 0; k-=stp){//2*yres+1=31
+   int i,j,k,z,yi=yres,y2=(xres+1)*(yres+1)/8,stp=y2/(yres+1);
+  for(k =y2; k >= stp; k-=stp){//2*yres+1=31
     //Serial.println("loop1");
       z=k;
       for(j = 0;j <=xres ; j++){
